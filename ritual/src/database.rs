@@ -679,7 +679,7 @@ impl DatabaseClient {
             let item_path = item.path().expect("crate root must have path");
             let crate_name = item_path.crate_name();
             if crate_name != *self.current_database.db.crate_name {
-                bail!("can't add rust item with different crate name: {:?}", item);
+                //bail!("can't add rust item with different crate name: {:?}", item);
             }
         } else {
             let mut path = item
@@ -687,7 +687,7 @@ impl DatabaseClient {
                 .map_err(|_| format_err!("path has no parent for rust item: {:?}", item))?;
             let crate_name = path.crate_name();
             if crate_name != *self.current_database.db.crate_name {
-                bail!("can't add rust item with different crate name: {:?}", item);
+                //bail!("can't add rust item with different crate name: {:?}", item);
             }
             while path.parts.len() > 1 {
                 if self.find_rust_item(&path).is_none() {
