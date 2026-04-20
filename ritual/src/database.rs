@@ -694,8 +694,7 @@ impl DatabaseClient {
                 .parent_path()
                 .map_err(|_| format_err!("path has no parent for rust item: {:?}", item))?;
             let crate_name = path.crate_name();
-            if crate_name != *self.current_database.db.crate_name /*&& crate_name != self.current_database.db.lib_name.as_deref().unwrap_or("") */ {
-                //bail!("can't add rust item with different crate name: {:?}, not matches with crate name: {}", item, self.current_database.db.crate_name);
+            if crate_name != *self.current_database.db.crate_name {
                 return Ok(None);
             }
             while path.parts.len() > 1 {

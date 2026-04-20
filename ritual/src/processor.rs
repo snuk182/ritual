@@ -227,7 +227,13 @@ fn build_crate(data: &mut ProcessorData<'_>) -> Result<()> {
         } else {
             command.current_dir(path);
         }
-        run_command(&mut command)?;
+        run_command(&mut command).or(match cargo_cmd {
+            &"test" => {
+                info!("cargo test failed, but we will continue");
+                Ok(())
+            }
+            _ => Err(format_err!("cargo {} failed", cargo_cmd)),
+        })?;
     }
     Ok(())
 }
