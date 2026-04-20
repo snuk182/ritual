@@ -5,7 +5,7 @@ use crate::cpp_ffi_data::{CppFfiArgumentMeaning, CppFfiItem};
 use crate::cpp_function::CppFunction;
 use crate::database::{DatabaseClient, DbItem, ItemId};
 use crate::doc_formatter;
-use crate::rust_generator::qt_core_path;
+use crate::rust_generator::{qt_core_path, crate_suffix};
 use crate::rust_info::{
     RustEnumValue, RustExtraImpl, RustExtraImplKind, RustFfiWrapperData, RustFunction,
     RustFunctionArgument, RustFunctionKind, RustItem, RustModule, RustModuleKind,
@@ -35,14 +35,14 @@ fn wrap_unsafe(in_unsafe_context: bool, content: &str) -> String {
     format!("{}{}{}", unsafe_start, content, unsafe_end)
 }
 
-pub fn rust_common_type_to_code(rust_type: &RustCommonType, current_crate: Option<&str>) -> String {
-    let mut code = rust_type.path.full_name(current_crate);
+pub fn rust_common_type_to_code(rust_type: &RustCommonType, current_crate: Option<&str>, current_lib: Option<&str>) -> String {
+    let mut code = rust_type.path.full_name(current_crate, current_lib);
     if let Some(args) = &rust_type.generic_arguments {
         write!(
             code,
             "<{}>",
             args.iter()
-                .map(|x| rust_type_to_code(x, current_crate))
+                .map(|x| rust_type_to_code(x, current_crate, current_lib))
                 .join(", ",)
         )
         .unwrap();
@@ -52,12 +52,12 @@ pub fn rust_common_type_to_code(rust_type: &RustCommonType, current_crate: Optio
 
 /// Generates Rust code representing type `rust_type` inside crate `crate_name`.
 /// Same as `RustCodeGenerator::rust_type_to_code`, but accessible by other modules.
-pub fn rust_type_to_code(rust_type: &RustType, current_crate: Option<&str>) -> String {
+pub fn rust_type_to_code(rust_type: &RustType, current_crate: Option<&str>, current_lib: Option<&str>) -> String {
     match rust_type {
         RustType::Tuple(types) => {
             let types_text = types
                 .iter()
-                .map(|t| rust_type_to_code(t, current_crate) + ",")
+                .map(|t| rust_type_to_code(t, current_crate, current_lib) + ",")
                 .join("");
             format!("({})", types_text)
         }
@@ -67,7 +67,7 @@ pub fn rust_type_to_code(rust_type: &RustType, current_crate: Option<&str>) -> S
             target,
             is_const,
         } => {
-            let target_code = rust_type_to_code(&*target, current_crate);
+            let target_code = rust_type_to_code(&*target, current_crate, current_lib);
             match kind {
                 RustPointerLikeTypeKind::Pointer => {
                     if *is_const {
@@ -89,26 +89,26 @@ pub fn rust_type_to_code(rust_type: &RustType, current_crate: Option<&str>) -> S
                 }
             }
         }
-        RustType::Common(common) => rust_common_type_to_code(common, current_crate),
+        RustType::Common(common) => rust_common_type_to_code(common, current_crate, current_lib),
         RustType::FunctionPointer(function) => format!(
             "extern \"C\" fn({}){}",
             function
                 .arguments
                 .iter()
-                .map(|arg| rust_type_to_code(arg, current_crate))
+                .map(|arg| rust_type_to_code(arg, current_crate, current_lib))
                 .join(", "),
             if function.return_type.is_unit() {
                 String::new()
             } else {
                 format!(
                     " -> {}",
-                    rust_type_to_code(&function.return_type, current_crate)
+                    rust_type_to_code(&function.return_type, current_crate, current_lib)
                 )
             }
         ),
         RustType::ImplTrait(trait_type) => format!(
             "impl {}",
-            rust_common_type_to_code(trait_type, current_crate)
+            rust_common_type_to_code(trait_type, current_crate, current_lib)
         ),
     }
 }
@@ -339,11 +339,11 @@ impl Generator<'_> {
     }
 
     fn rust_type_to_code(&self, rust_type: &RustType) -> String {
-        rust_type_to_code(rust_type, Some(&self.current_database.crate_name()))
+        rust_type_to_code(rust_type, Some(&self.current_database.crate_name()), self.current_database.lib_name())
     }
 
     fn rust_common_type_to_code(&self, rust_type: &RustCommonType) -> String {
-        rust_common_type_to_code(rust_type, Some(&self.current_database.crate_name()))
+        rust_common_type_to_code(rust_type, Some(&self.current_database.crate_name()), self.current_database.lib_name())        
     }
 
     #[allow(clippy::collapsible_if)]
@@ -438,16 +438,29 @@ impl Generator<'_> {
         Ok(())
     }
 
+    fn crate_suffix(&self) -> Option<String> {
+        crate_suffix(self.current_database.crate_name(), self.current_database.lib_name().as_deref())
+    }
+
     fn qt_core_path(&self) -> RustPath {
-        qt_core_path(&self.current_database.crate_name())
+        qt_core_path(
+            &self.current_database.crate_name(), 
+            self.crate_suffix().as_deref())
     }
 
     fn qt_core_prefix(&self) -> String {
-        let qt_core_path = self.qt_core_path();
-        if qt_core_path.parts[0] == self.current_database.crate_name() {
+        let qt_core_path = qt_core_path(
+            &self.current_database.lib_name().unwrap_or_else(|| self.current_database.crate_name()), 
+            None);
+        if qt_core_path.parts[0] == self.current_database.crate_name() || self.current_database.lib_name().map_or(false, |lib_name| lib_name == qt_core_path.parts[0]) {
             "crate".to_string()
         } else {
-            format!("::{}", qt_core_path.parts[0])
+            let prefix = match self.crate_suffix() {
+                Some(suffix) if qt_core_path.parts[0].ends_with(&format!("_{suffix}")) => qt_core_path.parts[0]
+                    .chars().take(qt_core_path.parts[0].len() - suffix.len() - 1).collect::<String>(),
+                _ => qt_core_path.parts[0].clone(),
+            };
+            format!("::{}", prefix)
         }
     }
 
@@ -553,7 +566,7 @@ impl Generator<'_> {
 
     // TODO: generate relative paths for better readability
     fn rust_path_to_string(&self, path: &RustPath) -> String {
-        path.full_name(Some(&self.current_database.crate_name()))
+        path.full_name(Some(&self.current_database.crate_name()), self.current_database.lib_name())
     }
 
     /// Wraps `expression` of type `type1.rust_ffi_type` to convert

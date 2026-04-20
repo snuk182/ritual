@@ -14,7 +14,7 @@ def get_links(url):
     soup = BeautifulSoup(html_page, features="lxml")
     links = [
         link.get('href')
-        for link in soup.findAll('a')
+        for link in soup.find_all('a')
         if link.get('href').endswith('.7z')
     ]
     links.sort()

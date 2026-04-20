@@ -144,7 +144,7 @@ pub fn struct_doc(type1: DbItem<&RustStruct>, database: &DatabaseClient) -> Resu
                         qt_receiver_data
                             .arguments
                             .iter()
-                            .map(|arg| rust_type_to_code(arg, Some(database.crate_name())))
+                            .map(|arg| rust_type_to_code(arg, Some(database.crate_name()), database.lib_name()))
                             .join(",")
                     )
                 };

@@ -17,6 +17,7 @@ use ritual_common::string_utils::CaseOperations;
 pub fn core_config(config: &mut Config) -> Result<()> {
     config.crate_properties_mut().add_dependency(
         "qt_macros",
+        None,
         CrateDependencyKind::Normal,
         CrateDependencySource::Local {
             path: repo_dir_path("qt_macros")?,
@@ -24,6 +25,7 @@ pub fn core_config(config: &mut Config) -> Result<()> {
     )?;
     config.crate_properties_mut().add_dependency(
         "proc-macro-hack",
+        None,
         CrateDependencyKind::Normal,
         CrateDependencySource::CratesIo {
             version: "0.5.11".into(),

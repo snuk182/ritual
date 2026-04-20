@@ -47,7 +47,7 @@ pub struct InstallationData {
 
 /// Detects properties of current Qt installation using `qmake` command line utility.
 pub fn get_installation_data(
-    crate_name: &str,
+    lib_name: &str,
     qmake_path: Option<&str>,
 ) -> Result<InstallationData> {
     let qt_version = run_qmake_string_query("QT_VERSION", qmake_path)?;
@@ -69,7 +69,7 @@ pub fn get_installation_data(
     debug!("QT_INSTALL_LIBS = \"{}\"", lib_path.display());
     let docs_path = run_qmake_query("QT_INSTALL_DOCS", qmake_path)?;
     debug!("QT_INSTALL_DOCS = \"{}\"", docs_path.display());
-    let folder_name = lib_folder_name(crate_name);
+    let folder_name = lib_folder_name(lib_name);
 
     let framework_headers_dir = lib_path.join(format!("{}.framework/Headers", folder_name));
     if framework_headers_dir.exists() {
@@ -109,10 +109,10 @@ pub struct FullBuildConfig {
 }
 
 pub fn get_full_build_config(
-    crate_name: &str,
+    lib_name: &str,
     qmake_path: Option<&str>,
 ) -> Result<FullBuildConfig> {
-    let installation_data = get_installation_data(crate_name, qmake_path)?;
+    let installation_data = get_installation_data(lib_name, qmake_path)?;
     let mut cpp_build_paths = CppBuildPaths::new();
     let mut cpp_build_config_data = CppBuildConfigData::new();
 
@@ -129,8 +129,8 @@ pub fn get_full_build_config(
         cpp_build_config_data.add_cmake_var(CMakeVar::new("RITUAL_QT", "1"));
     };
 
-    apply_installation_data(crate_name, &installation_data);
-    for dep in lib_dependencies(crate_name)? {
+    apply_installation_data(lib_name, &installation_data);
+    for dep in lib_dependencies(lib_name)? {
         let dep_data = get_installation_data(dep, qmake_path)?;
         apply_installation_data(dep, &dep_data);
     }

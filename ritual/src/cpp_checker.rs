@@ -511,7 +511,7 @@ impl CppChecker<'_, '_> {
                 let mut instance = instance.lock().unwrap();
                 instance.binary_check(chunk, Some(&progress_bar))
             })
-            .collect::<Result<_>>()?;
+            .collect::<Result<()>>()?;
         self.save_results(snippets)?;
 
         Ok(())

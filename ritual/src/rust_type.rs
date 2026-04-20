@@ -1,4 +1,5 @@
 use crate::rust_info::RustTypeCaptionStrategy;
+use crate::rust_generator::crate_suffix;
 use itertools::Itertools;
 use ritual_common::errors::{bail, Error, Result};
 use ritual_common::string_utils::CaseOperations;
@@ -80,14 +81,35 @@ impl RustPath {
     /// Returns formatted name for using within `current_crate`.
     /// If `current_crate` is `None`, it's assumed that the formatted name
     /// will be used outside of the crate it belongs to.
-    pub fn full_name(&self, current_crate: Option<&str>) -> String {
+    pub fn full_name(&self, current_crate: Option<&str>, current_lib: Option<&str>) -> String {
         if let Some(current_crate) = current_crate {
             if self.crate_name() == current_crate {
                 return format!("crate::{}", self.parts[1..].join("::"));
             }
         }
-
-        format!("::{}", self.parts.join("::"))
+        if let Some(current_lib) = current_lib {
+            if self.crate_name() == current_lib {
+                return format!("crate::{}", self.parts[1..].join("::"));
+            }
+        }
+        if self.parts.len() > 0 
+                && (self.parts[0].starts_with("qt_") || self.parts[0].starts_with("moqt_"))
+                && crate_suffix(current_crate.unwrap_or(""), current_lib)
+                    .filter(|suffix| self.parts[0].ends_with(&("_".to_owned() + suffix))).is_some() {
+            let lib_name = crate_suffix(current_crate.unwrap_or(""), current_lib)
+                .map(|suffix| self.parts[0]
+                    .chars().take(self.parts[0].len() - suffix.len() - 1).collect::<String>()).unwrap_or(self.parts[0].to_owned());
+            if self.parts.len() > 1 {
+                return format!("::{}::{}", lib_name, self.parts[1..].join("::"))
+            } else {
+                return format!("::{}", lib_name);
+            }
+        }
+        let formatted = format!("::{}", self.parts.join("::"));
+        if formatted.contains("qt_gui") {
+            println!("Formatted path: {}", formatted);
+        }
+        formatted
     }
 
     /// Returns true if `other` is nested within `self`.

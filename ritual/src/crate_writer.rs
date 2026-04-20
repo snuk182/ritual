@@ -112,20 +112,21 @@ fn generate_crate_template(data: &mut ProcessorData<'_>, output_path: &Path) -> 
                           name: &str,
                           source: &CrateDependencySource|
      -> Result<()> {
-        let (version, local_path) = match source {
-            CrateDependencySource::CratesIo { version } => (version.to_string(), None),
+        let (version, local_path, maybe_lib_name) = match source {
+            CrateDependencySource::CratesIo { version } => (version.to_string(), None, None),
             CrateDependencySource::Local { path } => {
                 let version = crate_version(path)?;
-                (version, Some(path.clone()))
+                (version, Some(path.clone()), None)
             }
             CrateDependencySource::CurrentWorkspace => {
                 let path = data.workspace.crate_path(name);
                 let version = data.db.dependency_version(name)?;
-                (version.to_string(), Some(path))
+                let lib_name = data.db.dependency_lib_name(name)?;
+                (version.to_string(), Some(path), lib_name)
             }
         };
 
-        let value = if local_path.is_none() || !data.config.write_dependencies_local_paths() {
+        let value = if (local_path.is_none() && maybe_lib_name.is_none()) || !data.config.write_dependencies_local_paths() {
             toml::Value::String(version)
         } else {
             let path = diff_paths(&local_path.expect("checked above"), &output_path)?;
@@ -135,6 +136,9 @@ fn generate_crate_template(data: &mut ProcessorData<'_>, output_path: &Path) -> 
                 "path".into(),
                 toml::Value::String(path_to_str(&path)?.into()),
             );
+            if let Some(lib_name) = maybe_lib_name {
+                value.insert("name".into(), toml::Value::String(lib_name.to_owned()));
+            }
             value.into()
         };
         table.insert(name.into(), value);
@@ -195,6 +199,12 @@ fn generate_crate_template(data: &mut ProcessorData<'_>, output_path: &Path) -> 
     table.insert("build-dependencies".into(), build_dependencies.into());
     table.insert("features".into(), features.into());
 
+    if data.config.crate_properties().maybe_suffix().is_some() {
+        let mut lib_name = toml::value::Table::new();
+        lib_name.insert("name".into(), toml::Value::String(data.config.crate_properties().lib_name().into()));
+        table.insert("lib".into(), lib_name.into());
+    }
+
     let cargo_toml_data = recursive_merge_toml(
         toml::Value::Table(table),
         toml::Value::Table(data.config.crate_properties().custom_fields().clone()),
@@ -245,7 +255,7 @@ fn generate_c_lib_template(
 
 pub fn run(data: &mut ProcessorData<'_>) -> Result<()> {
     let crate_name = data.config.crate_properties().name();
-    let output_path = data.workspace.crate_path(crate_name);
+    let output_path = data.workspace.crate_path(&crate_name);
 
     if output_path.exists() {
         remove_dir_all(&output_path)?;
@@ -259,7 +269,7 @@ pub fn run(data: &mut ProcessorData<'_>) -> Result<()> {
     if !c_lib_path.exists() {
         create_dir(&c_lib_path)?;
     }
-    let c_lib_name = format!("{}_c", data.config.crate_properties().name());
+    let c_lib_name = format!("{}_c", data.config.crate_properties().lib_name());
     let global_header_name = format!("{}_global.h", c_lib_name);
     generate_c_lib_template(
         &c_lib_name,
@@ -308,7 +318,7 @@ pub fn run(data: &mut ProcessorData<'_>) -> Result<()> {
     )?;
 
     copy_file(
-        data.workspace.database_path(crate_name),
+        data.workspace.database_path(&crate_name),
         output_path.join(CRATE_DB_FILE_NAME),
     )?;
 

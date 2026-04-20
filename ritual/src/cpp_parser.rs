@@ -161,7 +161,12 @@ fn get_context_template_args(entity: Entity<'_>) -> Vec<CppType> {
 }
 
 fn get_path_item(entity: Entity<'_>) -> Result<CppPathItem> {
-    let name = entity.get_name().ok_or_else(|| err_msg("Anonymous type"))?;
+    let name = if entity.is_anonymous() || entity.is_anonymous_record_decl() || entity.get_name().is_none() {
+        entity.get_location()
+            .map(|loc| loc.get_presumed_location())
+            .map(|(path, line, col)| format!("__anonymous_{:?}_{}_{}_{}", entity.get_kind(), ::std::path::Path::new(&path).file_name().unwrap_or_default().to_string_lossy().replace(".", "_"), line, col))
+            .unwrap_or_else(|| format!("__anonymous_{:?}_{:?}", entity.get_kind(), entity.get_usr().map(|usr| usr.0).unwrap_or_default()))
+    } else { entity.get_name().unwrap() };
     let template_arguments = get_template_arguments(entity);
     Ok(CppPathItem {
         name,
@@ -171,6 +176,14 @@ fn get_path_item(entity: Entity<'_>) -> Result<CppPathItem> {
 
 /// Returns fully qualified name of `entity`.
 fn get_path(entity: Entity<'_>) -> Result<CppPath> {
+    if entity.is_anonymous() || entity.is_anonymous_record_decl() {
+        let path = entity.get_location()
+            .map(|loc| loc.get_presumed_location())
+            .map(|(path, line, col)| format!("__anonymous_{:?}_{}_{}_{}", entity.get_kind(), ::std::path::Path::new(&path).file_name().unwrap_or_default().to_string_lossy().replace(".", "_"), line, col))
+            .unwrap_or_else(|| format!("__anonymous_{:?}_{:?}", entity.get_kind(), entity.get_usr().map(|usr| usr.0).unwrap_or_default()));
+        println!("Anonymous entity detected, using generated name: {}", path);
+        return Ok(CppPath::from_good_str(&path));
+    }
     let mut current_entity = entity;
     let mut parts = vec![get_path_item(entity)?];
     loop {
@@ -488,7 +501,14 @@ impl CppParser<'_, '_> {
                                 }
                             }
                         }
-                        let mut name = get_path(declaration)?;
+                        let mut name = if declaration.is_anonymous() || declaration.is_anonymous_record_decl() {
+                            CppPath::from_good_str(&declaration.get_location()
+                                .map(|loc| loc.get_presumed_location())
+                                .map(|(path, line, col)| format!("__anonymous_{:?}_{}_{}_{}", declaration.get_kind(), ::std::path::Path::new(&path).file_name().unwrap_or_default().to_string_lossy().replace(".", "_"), line, col))
+                                .unwrap_or_else(|| format!("__anonymous_{:?}_{:?}", declaration.get_kind(), declaration.get_usr().map(|usr| usr.0).unwrap_or_default())))
+                        } else {
+                            get_path(declaration)?
+                        };
                         name.last_mut().template_arguments = Some(arg_types);
                         return Ok(CppType::Class(name));
                     } else {
@@ -864,7 +884,7 @@ impl CppParser<'_, '_> {
                                 )
                             }) {
                                 if let Ok(CppType::Class(path)) = &mut parsed_canonical {
-                                    let mut last_item = path.last_mut();
+                                    let last_item = path.last_mut();
                                     if last_item.template_arguments.is_some() {
                                         last_item.template_arguments =
                                             Some(template_arguments_unexposed.clone());
@@ -1028,7 +1048,7 @@ impl CppParser<'_, '_> {
                     argument_entity
                 )
             })?;
-            if clang_type.get_display_name().ends_with("::QPrivateSignal") {
+            if clang_type.get_display_name().ends_with("::QPrivateSignal") || clang_type.get_display_name() == "QPrivateSignal" {
                 is_signal = true;
                 continue;
             }
@@ -1376,7 +1396,7 @@ impl CppParser<'_, '_> {
             )
         })?;
         let full_name = get_path(entity)?;
-        let template_arguments = get_template_arguments(entity);
+                let template_arguments = get_template_arguments(entity);
         if entity.get_kind() == EntityKind::ClassTemplate {
             if entity
                 .get_children()
@@ -1521,7 +1541,7 @@ impl CppParser<'_, '_> {
                 if entity.get_accessibility() == Some(Accessibility::Private) {
                     return Ok(()); // skipping private stuff
                 }
-                let ok = entity.get_name().is_some() && // not an anonymous struct
+                let ok = entity.get_name().is_some() && !entity.is_anonymous() && !entity.is_anonymous_record_decl() && // not an anonymous struct
                     entity.is_definition() && // not a forward declaration
                     entity.get_template().is_none(); // not a template specialization
                 if ok {

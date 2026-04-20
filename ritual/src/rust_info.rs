@@ -721,19 +721,19 @@ impl RustItem {
 
     pub fn short_text(&self) -> String {
         match self {
-            RustItem::Module(data) => format!("mod {}", data.path.full_name(None)),
-            RustItem::Struct(data) => format!("struct {}", data.path.full_name(None)),
-            RustItem::EnumValue(data) => format!("enum value {}", data.path.full_name(None)),
+            RustItem::Module(data) => format!("mod {}", data.path.full_name(None, None)),
+            RustItem::Struct(data) => format!("struct {}", data.path.full_name(None, None)),
+            RustItem::EnumValue(data) => format!("enum value {}", data.path.full_name(None, None)),
             RustItem::TraitImpl(data) => format!(
                 "impl {} for {}",
-                rust_common_type_to_code(&data.trait_type, None),
-                rust_type_to_code(&data.target_type, None)
+                rust_common_type_to_code(&data.trait_type, None, None),
+                rust_type_to_code(&data.target_type, None, None)
             ),
             RustItem::ExtraImpl(data) => format!("extra impl {:?}", data.kind),
-            RustItem::Function(data) => format!("fn {}", data.path.full_name(None)),
+            RustItem::Function(data) => format!("fn {}", data.path.full_name(None, None)),
             RustItem::Reexport(data) => format!(
                 "use {} as {}",
-                data.path.full_name(None),
+                data.path.full_name(None, None),
                 data.target.last()
             ),
         }

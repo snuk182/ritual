@@ -47,7 +47,8 @@ pub fn create_config(
     qmake_path: Option<&str>,
 ) -> Result<Config> {
     let crate_name = crate_properties.name().to_string();
-    info!("Preparing generator config for crate: {}", crate_name);
+    let lib_name = crate_properties.lib_name().to_string();
+    info!("Preparing generator config for crate {}, lib {}", crate_name, lib_name);
     let mut custom_fields = toml::value::Table::new();
     let mut package_data = toml::value::Table::new();
     package_data.insert(
@@ -56,7 +57,7 @@ pub fn create_config(
             "Pavel Strakhov <ri@idzaaus.org>".to_string(),
         )]),
     );
-    let description = format!("Bindings for {} C++ library", lib_folder_name(&crate_name));
+    let description = format!("Bindings for {} C++ library (at {})", lib_folder_name(&lib_name), crate_name);
     package_data.insert("description".to_string(), toml::Value::String(description));
     let doc_url = format!("https://docs.rs/{}", &crate_name);
     package_data.insert("documentation".to_string(), toml::Value::String(doc_url));
@@ -88,9 +89,10 @@ pub fn create_config(
     custom_fields.insert("package".to_string(), toml::Value::Table(package_data));
     crate_properties.set_custom_fields(custom_fields);
 
-    for &dependency in lib_dependencies(&crate_name)? {
+    for &dependency in lib_dependencies(crate_properties.lib_name())? {
         crate_properties.add_dependency(
-            dependency,
+            format!("{}{}", dependency, crate_properties.maybe_suffix().map(|s| "_".to_owned() + s).unwrap_or(String::new())),
+            Some(dependency.to_string()),
             CrateDependencyKind::Ritual,
             CrateDependencySource::CurrentWorkspace,
         )?;
@@ -121,7 +123,7 @@ pub fn create_config(
             paths.add_include_path(&sublib_include_path);
             paths.add_lib_path(&lib_path);
 
-            for &lib in lib_dependencies(&crate_name)? {
+            for &lib in lib_dependencies(&lib_name)? {
                 let dep_include_path = include_path.join(lib);
                 if !dep_include_path.exists() {
                     bail!("Path does not exist: {}", dep_include_path.display());
@@ -135,7 +137,7 @@ pub fn create_config(
         {
             let mut data = CppBuildConfigData::new();
             data.add_linked_lib(&crate_name);
-            for &lib in lib_dependencies(&crate_name)? {
+            for &lib in lib_dependencies(&lib_name)? {
                 data.add_linked_lib(lib);
             }
             // TODO: why shared for moqt?
@@ -160,7 +162,7 @@ pub fn create_config(
         config.set_crate_template_path(template_path.join(&crate_name));
 
         let steps = config.processing_steps_mut();
-        let crate_name_clone = crate_name.to_string();
+        let crate_name_clone = lib_name.to_string();
         steps.add_after(&["cpp_parser"], "qt_doc_parser", move |data| {
             parse_docs(data, &crate_name_clone, &Path::new("."))
         })?;
@@ -177,7 +179,7 @@ pub fn create_config(
 
         let mut config = Config::new(crate_properties);
 
-        let qt_config = get_full_build_config(&crate_name, qmake_path)?;
+        let qt_config = get_full_build_config(&lib_name, qmake_path)?;
         config.set_cpp_build_config(qt_config.cpp_build_config);
         config.set_cpp_build_paths(qt_config.cpp_build_paths);
 
@@ -185,7 +187,7 @@ pub fn create_config(
         config.set_cpp_lib_version(qt_config.installation_data.qt_version.as_str());
         // TODO: does parsing work on MacOS without adding "-F"?
 
-        config.add_include_directive(&lib_folder_name(&crate_name));
+        config.add_include_directive(&lib_folder_name(&lib_name));
 
         // TODO: allow to override parser flags
         if target::current_os() != target::OS::Windows {
@@ -194,7 +196,7 @@ pub fn create_config(
         config.add_cpp_parser_argument("-fcxx-exceptions");
 
         let steps = config.processing_steps_mut();
-        let crate_name_clone = crate_name.to_string();
+        let crate_name_clone = lib_name.to_string();
         let docs_path = qt_config.installation_data.docs_path;
 
         steps.add_after(&["cpp_parser"], "qt_doc_parser", move |data| {
@@ -202,7 +204,7 @@ pub fn create_config(
         })?;
 
         config
-            .set_crate_template_path(repo_dir_path("qt_ritual/crate_templates")?.join(&crate_name));
+            .set_crate_template_path(repo_dir_path("qt_ritual/crate_templates")?.join(&lib_name));
 
         config
     };
@@ -230,7 +232,7 @@ pub fn create_config(
         set_crate_root_doc,
     )?;
 
-    let lib_config = match crate_name.as_str() {
+    let lib_config = match lib_name.as_str() {
         "qt_core" => core_config,
         "qt_gui" => gui_config,
         "qt_widgets" => widgets_config,

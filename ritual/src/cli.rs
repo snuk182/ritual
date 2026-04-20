@@ -41,6 +41,9 @@ pub struct Options {
     #[structopt(long = "trace")]
     /// ID of item to trace
     pub trace: Option<String>,
+    #[structopt(short = "s", long = "suffix")]
+    /// Optional suffix of the output crates.
+    pub maybe_output_crates_suffix: Option<String>,
 }
 
 pub fn run_from_args(config: GlobalConfig) -> Result<()> {
@@ -111,9 +114,10 @@ pub fn run(options: Options, mut config: GlobalConfig) -> Result<()> {
             .create_config_hook()
             .ok_or_else(|| err_msg("create_config_hook is missing"))?;
 
-        let mut config = create_config(CrateProperties::new(
+        let mut config = create_config(CrateProperties::new_with_suffix(
             crate_name,
             &options.output_crates_version,
+            options.maybe_output_crates_suffix.as_deref(),
         ))?;
 
         if let Some(cluster_config_path) = &options.cluster {

@@ -127,6 +127,7 @@ fn test_moqt() {
             output_crates_version: "0.0.0".into(),
             cluster: None,
             trace: None,
+            maybe_output_crates_suffix: None,
         },
         global_config(),
     )

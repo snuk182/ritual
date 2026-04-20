@@ -1,4 +1,5 @@
-use qt_gui::{qt_core::QPoint, QGuiApplication, QWindow};
+use qt_gui::{QGuiApplication, QWindow};
+use qt_core::QPoint;
 
 #[test]
 fn window1() {

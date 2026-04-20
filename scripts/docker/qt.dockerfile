@@ -1,6 +1,6 @@
-FROM debian:buster as qt_downloader
+FROM debian:trixie as qt_downloader
 RUN apt-get update
-RUN apt-get install -y python3-bs4 p7zip-full
+RUN apt-get install -y python3-bs4 p7zip-full ca-certificates
 RUN mkdir -p /opt/qt
 WORKDIR /opt/qt
 COPY scripts/install_qt.py /
@@ -19,6 +19,7 @@ FROM ritual_builder
 COPY --from=qt_downloader /opt/qt /opt/qt
 COPY scripts/qt_env.sh /bin/qt_env
 
-RUN apt-get install -y libxrender1 libfontconfig libxkbcommon-x11-0 mesa-common-dev xvfb
+RUN apt-get install -y libxrender1 libfontconfig libxkbcommon-x11-0 mesa-common-dev xvfb 
+RUN apt-get install -y libglib2.0-dev
 RUN mkdir /tmp/run && chmod 0700 /tmp/run
 ENV XDG_RUNTIME_DIR=/tmp/run

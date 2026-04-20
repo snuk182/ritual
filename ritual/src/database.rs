@@ -31,6 +31,7 @@ impl DatabaseCache {
         &mut self,
         path: impl AsRef<Path>,
         crate_name: &str,
+        lib_name: Option<String>,
         allow_load: bool,
         allow_create: bool,
     ) -> Result<IndexedDatabase> {
@@ -46,7 +47,7 @@ impl DatabaseCache {
             }
         }
         if allow_create {
-            let db = Database::empty(crate_name.into());
+            let db = Database::empty(crate_name.into(), lib_name);
             return Ok(IndexedDatabase::new(db, path));
         }
         bail!("can't get database for {}", crate_name);
@@ -274,6 +275,7 @@ impl DatabaseItemData {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Database {
     crate_name: Arc<String>,
+    lib_name: Option<String>,
     crate_version: String,
     items: Vec<DbItem<DatabaseItemData>>,
     targets: Vec<LibraryTarget>,
@@ -281,9 +283,10 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn empty(crate_name: String) -> Self {
+    pub fn empty(crate_name: String, lib_name: Option<String>) -> Self {
         Database {
             crate_name: Arc::new(crate_name),
+            lib_name,
             crate_version: "0.0.0".into(),
             items: Vec::new(),
             targets: Vec::new(),
@@ -436,7 +439,7 @@ impl Drop for DatabaseClient {
     fn drop(&mut self) {
         let current_database = mem::replace(
             &mut self.current_database,
-            IndexedDatabase::new(Database::empty(String::new()), PathBuf::new()),
+            IndexedDatabase::new(Database::empty(String::new(), None), PathBuf::new()),
         );
         let dependencies = mem::replace(&mut self.dependencies, ReadOnly::new(Vec::new()));
 
@@ -609,6 +612,10 @@ impl DatabaseClient {
         &self.current_database.db.crate_name
     }
 
+    pub fn lib_name(&self) -> Option<&str> {
+        self.current_database.db.lib_name.as_deref()
+    }
+
     pub fn crate_version(&self) -> &str {
         &self.current_database.db.crate_version
     }
@@ -664,7 +671,7 @@ impl DatabaseClient {
     pub fn rust_children<'a>(
         &'a self,
         path: &'a RustPath,
-    ) -> impl Iterator<Item = DbItem<&RustItem>> {
+    ) -> impl Iterator<Item = DbItem<&'a RustItem>> {
         self.rust_items()
             .filter(move |item| item.item.is_child_of(path))
     }
@@ -678,16 +685,18 @@ impl DatabaseClient {
         if item.is_crate_root() {
             let item_path = item.path().expect("crate root must have path");
             let crate_name = item_path.crate_name();
-            if crate_name != *self.current_database.db.crate_name {
-                bail!("can't add rust item with different crate name: {:?}", item);
+            if crate_name != *self.current_database.db.crate_name /*&& crate_name != self.current_database.db.lib_name.as_deref().unwrap_or("") */ {
+                //bail!("can't add rust item with different crate name: {:?}, not matches with crate name: {}", item, self.current_database.db.crate_name);
+                return Ok(None);
             }
         } else {
             let mut path = item
                 .parent_path()
                 .map_err(|_| format_err!("path has no parent for rust item: {:?}", item))?;
             let crate_name = path.crate_name();
-            if crate_name != *self.current_database.db.crate_name {
-                bail!("can't add rust item with different crate name: {:?}", item);
+            if crate_name != *self.current_database.db.crate_name /*&& crate_name != self.current_database.db.lib_name.as_deref().unwrap_or("") */ {
+                //bail!("can't add rust item with different crate name: {:?}, not matches with crate name: {}", item, self.current_database.db.crate_name);
+                return Ok(None);
             }
             while path.parts.len() > 1 {
                 if self.find_rust_item(&path).is_none() {
@@ -971,6 +980,10 @@ impl DatabaseClient {
 
     pub fn dependency_version(&self, crate_name: &str) -> Result<&str> {
         Ok(&self.database(crate_name)?.db.crate_version)
+    }
+
+    pub fn dependency_lib_name(&self, crate_name: &str) -> Result<Option<&str>> {
+        Ok(self.database(crate_name)?.db.lib_name.as_deref())
     }
 
     pub fn print_item_trace(&self, item_id: &ItemId) -> Result<()> {

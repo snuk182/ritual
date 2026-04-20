@@ -92,16 +92,23 @@ impl Workspace {
 
     pub fn get_database_client(
         &mut self,
-        crate_name: &str,
+        lib_name: &str,
+        maybe_suffix: Option<&str>,
         dependencies: &[CrateDependency],
         allow_load: bool,
         allow_create: bool,
     ) -> Result<DatabaseClient> {
         let mut cache = DatabaseCache::global().lock().unwrap();
+        let crate_name = lib_name.to_owned() + &maybe_suffix.map(|s| "_".to_owned() + s).unwrap_or(String::new());
 
         let current_database = cache.get(
-            self.database_path(crate_name),
-            crate_name,
+            self.database_path(&crate_name),
+            &crate_name,
+            if crate_name != lib_name {
+                Some(lib_name.to_string())
+            } else {
+                None
+            },
             allow_load,
             allow_create,
         )?;
@@ -118,8 +125,7 @@ impl Workspace {
                         self.database_path(dependency.name())
                     }
                 };
-
-                cache.get(path, dependency.name(), true, false)
+                cache.get(path, dependency.name(), dependency.lib_name().map(|a| a.to_string()), true, false)
             })?;
         Ok(DatabaseClient::new(
             current_database,

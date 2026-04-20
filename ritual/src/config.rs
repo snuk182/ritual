@@ -30,6 +30,7 @@ pub enum CrateDependencySource {
 #[derive(Debug, Clone)]
 pub struct CrateDependency {
     name: String,
+    lib_name: Option<String>,
     kind: CrateDependencyKind,
     source: CrateDependencySource,
 }
@@ -47,6 +48,10 @@ impl CrateDependency {
     pub fn source(&self) -> &CrateDependencySource {
         &self.source
     }
+
+    pub fn lib_name(&self) -> Option<&str> {
+        self.lib_name.as_deref()
+    }
 }
 
 /// Information about the crate being generated.
@@ -56,6 +61,8 @@ impl CrateDependency {
 pub struct CrateProperties {
     /// Name of the crate
     name: String,
+    /// Optional suffix of the name of the crate
+    maybe_suffix: Option<String>,
     /// Version of the crate (must be in compliance with cargo requirements)
     version: String,
     /// Extra properties to be merged with auto generated content of `Cargo.toml`
@@ -73,6 +80,10 @@ pub struct CrateProperties {
 impl CrateProperties {
     /// Creates a new object with `name` and `version`.
     pub fn new<S1: Into<String>, S2: Into<String>>(name: S1, version: S2) -> Self {
+        Self::new_with_suffix(name, version, Option::<String>::None)
+    }
+    /// Creates a new object with `name` and `version`.
+    pub fn new_with_suffix<S1: Into<String>, S2: Into<String>, S3: Into<String>>(name: S1, version: S2, maybe_suffix: Option<S3>) -> Self {
         Self {
             name: name.into(),
             version: version.into(),
@@ -81,6 +92,7 @@ impl CrateProperties {
             build_dependencies: Vec::new(),
             remove_default_dependencies: false,
             remove_default_build_dependencies: false,
+            maybe_suffix: maybe_suffix.map(S3::into),
         }
     }
 
@@ -89,6 +101,7 @@ impl CrateProperties {
     pub fn add_dependency(
         &mut self,
         name: impl Into<String>,
+        lib_name: Option<String>,
         kind: CrateDependencyKind,
         source: CrateDependencySource,
     ) -> Result<()> {
@@ -98,6 +111,7 @@ impl CrateProperties {
         }
         self.dependencies.push(CrateDependency {
             name: name.into(),
+            lib_name,
             kind,
             source,
         });
@@ -116,6 +130,7 @@ impl CrateProperties {
         }
         self.build_dependencies.push(CrateDependency {
             name: name.into(),
+            lib_name: None,
             kind: CrateDependencyKind::Normal,
             source,
         });
@@ -139,8 +154,16 @@ impl CrateProperties {
         self.custom_fields = value;
     }
 
-    /// Name of the crate
-    pub fn name(&self) -> &str {
+    /// Optional crate name suffix, if available
+    pub fn maybe_suffix(&self) -> Option<&str> {
+        self.maybe_suffix.as_ref().map(|s| s.as_str())
+    }
+    /// Name of the crate with the suffix, if available
+    pub fn name(&self) -> String {
+        self.maybe_suffix.as_ref().map_or_else(|| self.name.clone(), |suffix| format!("{}_{}", &self.name, suffix))
+    }
+    /// Name of the crate without the suffix
+    pub fn lib_name(&self) -> &str {
         &self.name
     }
     /// Version of the crate

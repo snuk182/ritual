@@ -208,7 +208,7 @@ fn build_crate(data: &mut ProcessorData<'_>) -> Result<()> {
 
     for cargo_cmd in &["build", "doc", "test"] {
         let mut command = Command::new("cargo");
-        command.arg(cargo_cmd).arg("-p").arg(crate_name);
+        command.arg(cargo_cmd).arg("-p").arg(&crate_name);
 
         if let Ok(dir) = env::var(WORKSPACE_TARGET_DIR) {
             command.env("CARGO_TARGET_DIR", dir);
@@ -222,7 +222,7 @@ fn build_crate(data: &mut ProcessorData<'_>) -> Result<()> {
             // https://github.com/rust-lang/cargo/issues/5015
             command.current_dir(
                 data.workspace
-                    .crate_path(data.config.crate_properties().name()),
+                    .crate_path(&data.config.crate_properties().name()),
             );
         } else {
             command.current_dir(path);
@@ -319,34 +319,6 @@ fn delete_orphans(data: &mut ProcessorData<'_>) -> Result<()> {
     Ok(())
 }
 
-#[derive(Debug)]
-struct MainItemRef<'a> {
-    step: &'a ProcessingStep,
-    run_after: &'a [String],
-}
-
-impl PartialEq for MainItemRef<'_> {
-    fn eq(&self, other: &MainItemRef<'_>) -> bool {
-        self.step.name == other.step.name
-    }
-}
-
-impl PartialOrd for MainItemRef<'_> {
-    fn partial_cmp(&self, other: &MainItemRef<'_>) -> Option<Ordering> {
-        if self.run_after.contains(&other.step.name) {
-            Some(Ordering::Greater)
-        } else {
-            Some(Ordering::Less)
-        }
-    }
-}
-impl Eq for MainItemRef<'_> {}
-impl Ord for MainItemRef<'_> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
-    }
-}
-
 #[allow(clippy::useless_let_if_seq)]
 pub fn process(
     workspace: &mut Workspace,
@@ -371,7 +343,8 @@ pub fn process(
 
     let mut db_client = workspace
         .get_database_client(
-            config.crate_properties().name(),
+            &config.crate_properties().lib_name(),
+            config.crate_properties().maybe_suffix(),
             config.crate_properties().dependencies(),
             allow_load,
             true,

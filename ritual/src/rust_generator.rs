@@ -37,12 +37,26 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::iter::Iterator;
 use std::ops::Deref;
 
-pub fn qt_core_path(crate_name: &str) -> RustPath {
+pub fn qt_core_path_prefix(crate_name: &str, suffix: Option<&str>) -> String {
     if crate_name.starts_with("moqt_") {
-        RustPath::from_good_str("moqt_core")
+        format!("{}{}", "moqt_core", suffix.map(|s| format!("_{}", s)).unwrap_or(String::new()))
     } else {
-        RustPath::from_good_str("qt_core")
+        format!("{}{}", "qt_core", suffix.map(|s| format!("_{}", s)).unwrap_or(String::new()))
     }
+}
+
+pub fn crate_suffix(crate_name: &str, crate_lib: Option<&str>) -> Option<String> {
+    match crate_lib {
+        Some(lib_name) if crate_name.starts_with("qt_") => Some(crate_name
+                .chars()
+                .skip(lib_name.len() + 1)
+                .collect::<String>()),
+        _ => return None,
+    }
+}
+
+pub fn qt_core_path(crate_name: &str, suffix: Option<&str>) -> RustPath {
+    RustPath::from_good_str(&qt_core_path_prefix(crate_name, suffix))
 }
 
 /// Adds "_" to a string if it is a reserved word in Rust
@@ -685,7 +699,7 @@ impl State<'_, '_> {
     }
 
     fn qt_core_path(&self) -> RustPath {
-        qt_core_path(self.data.config.crate_properties().name())
+        qt_core_path(&self.data.config.crate_properties().name(), self.data.config.crate_properties().maybe_suffix())
     }
 
     fn create_qflags(&self, arg: &RustPath) -> RustType {
@@ -2241,6 +2255,7 @@ impl State<'_, '_> {
         loop {
             let mut any_processed = false;
             for cpp_item_id in all_cpp_item_ids.clone() {
+                println!("considering cpp item {}", cpp_item_id);
                 if processed_ids.contains(&cpp_item_id) {
                     continue;
                 }
@@ -2248,6 +2263,7 @@ impl State<'_, '_> {
                 let cpp_item = self.data.db.cpp_item(&cpp_item_id)?;
                 if let Ok(rust_items) = self.process_cpp_item(cpp_item) {
                     for rust_item in rust_items {
+                        println!("adding rust item for cpp item {} : {:?}", cpp_item_id, rust_item);
                         self.add_rust_item(Some(cpp_item_id.clone()), rust_item)?;
                     }
                     processed_ids.insert(cpp_item_id);

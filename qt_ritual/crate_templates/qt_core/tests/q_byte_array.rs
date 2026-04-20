@@ -11,7 +11,7 @@ fn qrect() {
 
         let slice = array.as_mut_slice();
         slice[1] = 47;
-        drop(slice);
+        let _ = drop(slice);
 
         assert_eq!(array.index_int(0), 42);
         assert_eq!(array.index_int(1), 47);

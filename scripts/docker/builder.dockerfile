@@ -1,17 +1,12 @@
-FROM debian:buster as ritual_builder
-ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
+FROM debian:trixie as ritual_builder
 RUN apt-get update && \
-    apt-get install -y build-essential mesa-common-dev libgl1-mesa-glx \
-                       cmake curl software-properties-common libssl-dev pkg-config && \
-    curl https://apt.llvm.org/llvm-snapshot.gpg.key -sSf | apt-key add - && \
-    add-apt-repository "deb http://apt.llvm.org/buster/ llvm-toolchain-buster main" && \
-    apt-get update && \
-    apt-get install -y libsqlite3-dev libclang-6.0-dev
-ENV LIBCLANG_PATH=/usr/lib/llvm-6.0/lib
-
+    apt-get install -y build-essential mesa-common-dev \
+                       cmake curl libssl-dev pkg-config libsqlite3-dev lsb-release gnupg
+RUN mkdir -p /usr/lib/llvm && curl  https://releases.llvm.org/6.0.1/clang+llvm-6.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz | tar -xJ -C /usr/lib/llvm/ --strip-components=1
+ENV LIBCLANG_PATH=/usr/lib/llvm/lib
 COPY rust-toolchain /tmp/rust-toolchain
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(cat /tmp/rust-toolchain) -y
-ENV PATH=/root/.cargo/bin:$PATH
+ENV PATH=/root/.cargo/bin:/usr/lib/llvm/bin:$PATH
 RUN rustup component add rustfmt
 ENV RUST_BACKTRACE=1
 
