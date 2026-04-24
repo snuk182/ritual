@@ -1,4 +1,6 @@
-use qt_web_engine_widgets::{qt_core::{QUrl, QString}, qt_widgets::QApplication, QWebEngineView};
+use qt_web_engine_widgets::QWebEngineView;
+use qt_core::{QUrl, QString};
+use qt_widgets::QApplication;
 
 #[test]
 fn web1() {
