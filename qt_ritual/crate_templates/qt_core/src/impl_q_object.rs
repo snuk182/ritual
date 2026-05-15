@@ -1,4 +1,4 @@
-use crate::{QObject, QPtr, QString};
+use crate::{QAnyStringView, QObject, QPtr, QString};
 use cpp_core::{DynamicCast, StaticUpcast};
 use std::error::Error;
 use std::fmt;
@@ -52,7 +52,9 @@ impl QObject {
         QObject: DynamicCast<T>,
         T: StaticUpcast<QObject>,
     {
-        let ptr = self.find_child_q_object_1a(&QString::from_std_str(name));
+        let ptr = self.find_child_q_object_q_any_string_view(&QAnyStringView::from_q_string(
+            &QString::from_std_str(name),
+        ));
         if ptr.is_null() {
             return Err(FindChildError(FindChildErrorInner::NotFound {
                 name: name.into(),

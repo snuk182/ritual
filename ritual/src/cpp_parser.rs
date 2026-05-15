@@ -181,7 +181,7 @@ fn get_path(entity: Entity<'_>) -> Result<CppPath> {
             .map(|loc| loc.get_presumed_location())
             .map(|(path, line, col)| format!("__anonymous_{:?}_{}_{}_{}", entity.get_kind(), ::std::path::Path::new(&path).file_name().unwrap_or_default().to_string_lossy().replace(".", "_"), line, col))
             .unwrap_or_else(|| format!("__anonymous_{:?}_{:?}", entity.get_kind(), entity.get_usr().map(|usr| usr.0).unwrap_or_default()));
-        println!("Anonymous entity detected, using generated name: {}", path);
+        trace!("Anonymous entity detected, using generated name: {}", path);
         return Ok(CppPath::from_good_str(&path));
     }
     let mut current_entity = entity;
@@ -286,7 +286,7 @@ fn run_clang<R, F: FnMut(Entity<'_>) -> Result<R>>(
         "-detailed-preprocessing-record".to_string(),
     ];
     if current_env() != Env::Msvc {
-        args.push("-std=c++11".to_string());
+        args.push("-std=c++17".to_string());
     }
     args.extend_from_slice(config.cpp_parser_arguments());
     let mut cpp_build_paths = config.cpp_build_paths().clone();

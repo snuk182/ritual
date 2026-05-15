@@ -15,7 +15,6 @@ use ritual_common::env_var_names::WORKSPACE_TARGET_DIR;
 use ritual_common::errors::{bail, err_msg, format_err, Result, ResultExt};
 use ritual_common::target::LibraryTarget;
 use ritual_common::utils::{run_command, MapIfOk};
-use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::ops::Bound;
 use std::path::PathBuf;

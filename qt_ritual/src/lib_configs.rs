@@ -153,7 +153,7 @@ pub fn create_config(
         {
             let mut data = CppBuildConfigData::new();
             data.add_compiler_flag("-fPIC");
-            data.add_compiler_flag("-std=gnu++11");
+            data.add_compiler_flag("-std=gnu++17");
             config
                 .cpp_build_config_mut()
                 .add(target::Condition::Env(target::Env::Msvc).negate(), data);
@@ -214,9 +214,9 @@ pub fn create_config(
     };
 
     if target::current_env() == target::Env::Msvc {
-        config.add_cpp_parser_argument("-std=c++14");
+        config.add_cpp_parser_argument("-std=c++17");
     } else {
-        config.add_cpp_parser_argument("-std=gnu++11");
+        config.add_cpp_parser_argument("-std=gnu++17");
     }
 
     config.add_after_cpp_parser_hook(detect_signals_and_slots);

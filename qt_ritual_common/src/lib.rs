@@ -13,6 +13,7 @@ use ritual_common::errors::{bail, Result};
 use ritual_common::string_utils::CaseOperations;
 use ritual_common::target;
 use ritual_common::utils::get_command_output;
+use std::env;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -54,9 +55,9 @@ pub fn get_installation_data(
     debug!("QT_VERSION = \"{}\"", qt_version);
 
     let qt_version_parsed = semver::Version::parse(&qt_version)?;
-    if qt_version_parsed.major != 5 {
+    if qt_version_parsed.major != 6 {
         bail!(
-            "only Qt 5 is supported! \"{}\" is not supported",
+            "only Qt 6 is supported! \"{}\" is not supported",
             qt_version
         );
     }
@@ -112,6 +113,8 @@ pub fn get_full_build_config(
     lib_name: &str,
     qmake_path: Option<&str>,
 ) -> Result<FullBuildConfig> {
+    env::set_var("QT_SELECT", "qt6");
+
     let installation_data = get_installation_data(lib_name, qmake_path)?;
     let mut cpp_build_paths = CppBuildPaths::new();
     let mut cpp_build_config_data = CppBuildConfigData::new();
@@ -140,7 +143,7 @@ pub fn get_full_build_config(
     cpp_build_config.add(target::Condition::True, cpp_build_config_data);
     {
         let mut data = CppBuildConfigData::new();
-        data.add_compiler_flag("-std=gnu++11");
+        data.add_compiler_flag("-std=gnu++17");
         cpp_build_config.add(target::Condition::Env(target::Env::Msvc).negate(), data);
     }
     {
@@ -157,11 +160,11 @@ pub fn get_full_build_config(
 }
 
 /// Returns library name of the specified module as
-/// should be passed to the linker, e.g. `"Qt5Core"`.
+/// should be passed to the linker, e.g. `"Qt6Core"`.
 pub fn real_lib_name(crate_name: &str) -> String {
     let sublib_name = crate_name.replace("qt_", "");
     let sublib_name_capitalized = sublib_name.to_class_case();
-    format!("Qt5{}", sublib_name_capitalized)
+    format!("Qt6{}", sublib_name_capitalized)
 }
 
 /// Returns name of the module's include directory, e.g. `"QtCore"`.

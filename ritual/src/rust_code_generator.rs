@@ -1132,7 +1132,7 @@ impl Generator<'_> {
             maybe_pub = maybe_pub,
             maybe_unsafe = maybe_unsafe,
             generic_args_text = generic_args_text,
-            name = func.item.path.last(),
+            name = func.item.path.last().replace("\"", "_quot"),
             args = self
                 .arg_texts(&func.item.arguments, None, self_type)?
                 .join(", "),
@@ -1144,7 +1144,10 @@ impl Generator<'_> {
 
     fn generate_children(&mut self, parent: &RustPath, self_type: Option<&RustType>) -> Result<()> {
         for item in self.current_database.rust_children(&parent) {
-            self.generate_item(item, self_type)?;
+            match self.generate_item(item, self_type) {
+                Ok(()) => (),
+                Err(e) => eprintln!("Error generating item: {}", e),
+            }
         }
         Ok(())
     }

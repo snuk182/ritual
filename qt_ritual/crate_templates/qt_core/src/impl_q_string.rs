@@ -1,6 +1,6 @@
 use crate::QString;
 use cpp_core::CppBox;
-use std::os::raw::{c_char, c_int};
+use std::os::raw::{c_char, c_long};
 
 /// Allows to convert Qt strings to `std` strings
 impl<'a> From<&'a QString> for String {
@@ -15,7 +15,7 @@ impl QString {
     /// `QString` makes a deep copy of the data.
     pub fn from_std_str<S: AsRef<str>>(s: S) -> CppBox<QString> {
         let slice = s.as_ref().as_bytes();
-        unsafe { QString::from_utf8_char_int(slice.as_ptr() as *mut c_char, slice.len() as c_int) }
+        unsafe { QString::from_utf8_2a(slice.as_ptr() as *mut c_char, slice.len() as c_long) }
     }
 
     /// Creates an `std` string from a Qt string.

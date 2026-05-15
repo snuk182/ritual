@@ -53,6 +53,7 @@ def install_dir(dir, modules):
         install(file_url, module)
 
 version = sys.argv[1]
+major_version = int(version.split('.')[0])
 minor_version = int(version.split('.')[1])
 
 if sys.argv[2] == '--docs':
@@ -70,19 +71,19 @@ if sys.argv[2] == '--docs':
     else:
         modules = ['qt-everywhere-documentation']
     install_dir(
-        'qt5_{0}_src_doc_examples/qt.qt5.{0}.doc/'.format(version_uglified),
+        'qt{1}_{0}_src_doc_examples/qt.qt{1}.{0}.doc/'.format(version_uglified, major_version),
         modules
     )
     install_dir(
-        'qt5_{0}_src_doc_examples/qt.qt5.{0}.doc.qtwebengine/'.format(version_uglified),
+        'qt{1}_{0}_src_doc_examples/qt.qt{1}.{0}.doc.qtwebengine/'.format(version_uglified, major_version),
         ['qtwebengine']
     )
     install_dir(
-        'qt5_{0}_src_doc_examples/qt.qt5.{0}.doc.qtcharts/'.format(version_uglified),
+        'qt{1}_{0}_src_doc_examples/qt.qt{1}.{0}.doc.qtcharts/'.format(version_uglified, major_version),
         ['qtcharts']
     )
     install_dir(
-        'qt5_{0}_src_doc_examples/qt.qt5.{0}.doc.qtdatavis3d/'.format(version_uglified),
+        'qt{1}_{0}_src_doc_examples/qt.qt{1}.{0}.doc.qtdatavis3d/'.format(version_uglified, major_version),
         ['qtdatavisualization']
     )
     sys.exit(0)
@@ -108,19 +109,19 @@ if minor_version > 9:
 if minor_version > 11:
     modules.extend(['qtremoteobjects'])
 install_dir(
-    'qt5_{0}/qt.qt5.{0}.{1}/'.format(version_uglified, compiler),
+    'qt{2}_{0}/qt.qt{2}.{0}.{1}/'.format(version_uglified, compiler, major_version),
     modules
 )
 install_dir(
-    'qt5_{0}/qt.qt5.{0}.qtwebengine.{1}/'.format(version_uglified, compiler),
+    'qt{2}_{0}/qt.qt{2}.{0}.qtwebengine.{1}/'.format(version_uglified, compiler, major_version),
     ['qtwebengine']
 )
 install_dir(
-    'qt5_{0}/qt.qt5.{0}.qtcharts.{1}/'.format(version_uglified, compiler),
+    'qt{2}_{0}/qt.qt{2}.{0}.qtcharts.{1}/'.format(version_uglified, compiler, major_version),
     ['qtcharts']
 )
 install_dir(
-    'qt5_{0}/qt.qt5.{0}.qtdatavis3d.{1}/'.format(version_uglified, compiler),
+    'qt{2}_{0}/qt.qt{2}.{0}.qtdatavis3d.{1}/'.format(version_uglified, compiler, major_version),
     ['qtdatavis3d']
 )
 

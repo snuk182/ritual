@@ -52,9 +52,9 @@ impl<T: StaticUpcast<QObject>> QPtr<T> {
             q_pointer: if target.is_null() {
                 None
             } else {
-                Some(QPointerOfQObject::new_1a(Ptr::from_raw(
-                    target.as_raw_ptr(),
-                )))
+                let q_pointer = QPointerOfQObject::new();
+                q_pointer.copy_from_q_object(target.clone().static_upcast::<QObject>());
+                Some(q_pointer)
             },
             target,
         }

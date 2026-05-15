@@ -23,7 +23,7 @@ foreach(lib_name moqt_core moqt_gui)
     endif()
 
     set_target_properties(${lib_name} PROPERTIES PUBLIC_HEADER "${headers}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     add_definitions(-D${lib_name_uppercase}_LIBRARY)
 
     install(TARGETS ${lib_name}

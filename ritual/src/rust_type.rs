@@ -105,11 +105,7 @@ impl RustPath {
                 return format!("::{}", lib_name);
             }
         }
-        let formatted = format!("::{}", self.parts.join("::"));
-        if formatted.contains("qt_gui") {
-            println!("Formatted path: {}", formatted);
-        }
-        formatted
+        format!("::{}", self.parts.join("::"))
     }
 
     /// Returns true if `other` is nested within `self`.

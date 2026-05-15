@@ -28,12 +28,15 @@ where
 ///
 /// Example:
 /// ```
-/// use qt_core::{qdbg, QVectorOfInt};
+/// use qt_core::{qdbg, QListOfInt, QObject};
+/// use cpp_core::{CastInto, Ref};
+/// use std::os::raw::c_void;
 /// # unsafe {
-/// let x = QVectorOfInt::new_0a();
-/// x.append_int(&1);
-/// x.append_int(&2);
-/// println!("{:?}", qdbg(x.as_ref()));
+/// let x = QListOfInt::new_0a();
+/// x.resize(x.size() + 2);
+/// x.index_mut(0).replace(1);
+/// x.index_mut(1).replace(2);
+/// println!("{:?}", qdbg(x.as_ref().as_raw_ptr() as *const c_void));
 /// # }
 /// ```
 pub unsafe fn qdbg<T>(value: T) -> QDebugShim<T> {

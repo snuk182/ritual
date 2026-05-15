@@ -1,14 +1,16 @@
 use qt_core::{
-    ItemDataRole, QAbstractItemModel, QAbstractTableModel, QString, QStringList, QStringListModel,
+    ItemDataRole, QAbstractItemModel, QAbstractTableModel, QListOfQString, QString,
+    QStringListModel, QAnyStringView
 };
 
 #[test]
 fn models_and_casts() {
     unsafe {
-        let string_list = QStringList::new();
-        string_list.append_q_string(&QString::from_std_str("text1"));
-        string_list.append_q_string(&QString::from_std_str("text2"));
-        let string_list_model = QStringListModel::from_q_string_list(&string_list);
+        let string_list = QListOfQString::new_0a();
+        string_list.resize(string_list.size() + 2);
+        string_list.index_mut(0).assign_1a(&QAnyStringView::from_q_string(&QString::from_std_str("text1")));
+        string_list.index_mut(1).assign_1a(&QAnyStringView::from_q_string(&QString::from_std_str("text2")));
+        let string_list_model = QStringListModel::from_q_list_of_q_string(&string_list);
         assert_eq!(string_list_model.row_count_0a(), 2);
 
         let index0 = string_list_model.index_2a(0, 0);

@@ -33,12 +33,9 @@ COPY --from=qt_downloader /opt/qt /opt/qt
 COPY --from=builder /app/target/debug/cluster_worker /root
 COPY . /app
 
-ENV QT_RITUAL_QMAKE_5_9_7=/opt/qt/5.9.7/gcc_64/bin/qmake
-ENV QT_RITUAL_QMAKE_5_11_3=/opt/qt/5.11.3/gcc_64/bin/qmake
-ENV QT_RITUAL_QMAKE_5_12_2=/opt/qt/5.12.2/gcc_64/bin/qmake
-ENV QT_RITUAL_QMAKE_5_13_0=/opt/qt/5.13.0/gcc_64/bin/qmake
+ENV QT_RITUAL_QMAKE_6_9_2=/opt/qt/6.9.2/gcc_64/bin/qmake
 
-ENV CMAKE_PREFIX_PATH=/opt/qt/5.13.0/gcc_64/lib/cmake/Qt5Core
+ENV CMAKE_PREFIX_PATH=/opt/qt/6.9.2/gcc_64/lib/cmake/Qt6Core
 
 ENV RUST_BACKTRACE=1
 ENV QT_RITUAL_WORKER_QUEUE_ADDRESS=amqp://localhost//

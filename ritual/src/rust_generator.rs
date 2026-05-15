@@ -566,6 +566,11 @@ struct State<'b, 'a> {
 impl State<'_, '_> {
     /// Converts `CppType` to its exact Rust equivalent (FFI-compatible)
     fn ffi_type_to_rust_ffi_type(&self, cpp_ffi_type: &CppType) -> Result<RustType> {
+        if let Ok(code) = cpp_ffi_type.to_cpp_code(None) {
+            if code.contains("QList") {
+                println!("cpp_ffi_type: {:?}, cpp code: {}", cpp_ffi_type, code);
+            }
+        }
         let rust_type = match &cpp_ffi_type {
             CppType::PointerLike {
                 kind,
@@ -694,7 +699,11 @@ impl State<'_, '_> {
             }
             CppType::TemplateParameter { .. } => bail!("invalid cpp type"),
         };
-
+if let Ok(code) = cpp_ffi_type.to_cpp_code(None) {
+            if code.contains("QList") {
+                println!("cpp_ffi_type: {:?}, rust_ffi_type: {:?}, cpp code: {}", cpp_ffi_type, rust_type, code);
+            }
+        }
         Ok(rust_type)
     }
 
@@ -2255,7 +2264,7 @@ impl State<'_, '_> {
         loop {
             let mut any_processed = false;
             for cpp_item_id in all_cpp_item_ids.clone() {
-                println!("considering cpp item {}", cpp_item_id);
+                trace!("considering cpp item {}", cpp_item_id);
                 if processed_ids.contains(&cpp_item_id) {
                     continue;
                 }
