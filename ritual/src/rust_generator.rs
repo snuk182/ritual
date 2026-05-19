@@ -566,11 +566,6 @@ struct State<'b, 'a> {
 impl State<'_, '_> {
     /// Converts `CppType` to its exact Rust equivalent (FFI-compatible)
     fn ffi_type_to_rust_ffi_type(&self, cpp_ffi_type: &CppType) -> Result<RustType> {
-        if let Ok(code) = cpp_ffi_type.to_cpp_code(None) {
-            if code.contains("QList") {
-                println!("cpp_ffi_type: {:?}, cpp code: {}", cpp_ffi_type, code);
-            }
-        }
         let rust_type = match &cpp_ffi_type {
             CppType::PointerLike {
                 kind,
@@ -699,11 +694,6 @@ impl State<'_, '_> {
             }
             CppType::TemplateParameter { .. } => bail!("invalid cpp type"),
         };
-if let Ok(code) = cpp_ffi_type.to_cpp_code(None) {
-            if code.contains("QList") {
-                println!("cpp_ffi_type: {:?}, rust_ffi_type: {:?}, cpp code: {}", cpp_ffi_type, rust_type, code);
-            }
-        }
         Ok(rust_type)
     }
 
@@ -2272,7 +2262,6 @@ if let Ok(code) = cpp_ffi_type.to_cpp_code(None) {
                 let cpp_item = self.data.db.cpp_item(&cpp_item_id)?;
                 if let Ok(rust_items) = self.process_cpp_item(cpp_item) {
                     for rust_item in rust_items {
-                        println!("adding rust item for cpp item {} : {:?}", cpp_item_id, rust_item);
                         self.add_rust_item(Some(cpp_item_id.clone()), rust_item)?;
                     }
                     processed_ids.insert(cpp_item_id);

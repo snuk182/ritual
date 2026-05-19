@@ -1200,6 +1200,9 @@ impl CppParser<'_, '_> {
                     } else {
                         line.len()
                     };
+                    if start_column > end_column {
+                        bail!("start column is greater than end column while extracting declaration code from source file");
+                    }
                     result.push_str(&line[start_column..end_column]);
                     if line_num >= range_line2 {
                         break;

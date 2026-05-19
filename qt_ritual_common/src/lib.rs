@@ -195,7 +195,7 @@ pub fn all_crate_names() -> &'static [&'static str] {
         "qt_3d_extras",
         "qt_charts",
         "qt_qml",
-        "qt_web_engine",
+        "qt_web_engine_core",
         "qt_web_engine_widgets",
     ]
 }
@@ -206,7 +206,7 @@ pub fn lib_dependencies(crate_name: &str) -> Result<&'static [&'static str]> {
         "qt_core" => &[],
         "qt_gui" => &["qt_core"],
         "qt_widgets" => &["qt_core", "qt_gui"],
-        "qt_web_engine_widgets" => &["qt_core", "qt_gui", "qt_widgets", "qt_web_engine"],
+        "qt_web_engine_widgets" => &["qt_core", "qt_gui", "qt_widgets", "qt_web_engine_core"],
         "qt_3d_core" => &["qt_core", "qt_gui"],
         "qt_3d_render" | "qt_3d_input" | "qt_3d_logic" => &["qt_core", "qt_gui", "qt_3d_core"],
         "qt_3d_extras" => &[
@@ -217,7 +217,7 @@ pub fn lib_dependencies(crate_name: &str) -> Result<&'static [&'static str]> {
             "qt_3d_input",
             "qt_3d_logic",
         ],
-        "qt_ui_tools" | "qt_charts" | "qt_web_engine" => &["qt_core", "qt_gui", "qt_widgets"],
+        "qt_ui_tools" | "qt_charts" | "qt_web_engine_core" => &["qt_core", "qt_gui", "qt_widgets"],
         // NOTE: qt_qml actually depends on qt_network as well
         "qt_qml" => &["qt_core", "qt_gui"],
         "moqt_core" => &[],

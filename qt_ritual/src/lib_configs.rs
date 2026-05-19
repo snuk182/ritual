@@ -28,7 +28,7 @@ use self::_3d::{
     core_3d_config, extras_3d_config, input_3d_config, logic_3d_config, render_3d_config,
 };
 use self::web_engine::{
-    web_engine_config, web_engine_widgets_config,
+    web_engine_core_config, web_engine_widgets_config,
 };
 use self::{charts::charts_config, core::core_config, gui::gui_config, widgets::widgets_config};
 use crate::lib_configs::qml::qml_config;
@@ -248,7 +248,7 @@ pub fn create_config(
         "qt_ui_tools" => ui_tools_config,
         "qt_charts" => charts_config,
         "qt_qml" => qml_config,
-        "qt_web_engine" => web_engine_config,
+        "qt_web_engine_core" => web_engine_core_config,
         "qt_web_engine_widgets" => web_engine_widgets_config,
         "moqt_core" => core_config,
         "moqt_gui" => gui_config,

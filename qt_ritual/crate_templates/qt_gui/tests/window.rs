@@ -12,7 +12,7 @@ fn window1() {
         c.set_geometry_4a(40, 40, 100, 100);
 
         let point = QPoint::new_2a(100, 100);
-        let r1 = a.map_to_global(&point);
+        let r1 = a.map_to_global_q_point(&point);
         assert_eq!(r1.x(), 110);
         assert_eq!(r1.y(), 110);
         0

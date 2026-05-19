@@ -111,7 +111,7 @@ pub fn detect_signals_and_slots(
                         section_type = section.section_type.clone();
                         match section.section_type {
                             SectionType::Signals => {
-                                println!("Found signal: {}", method.short_text());
+                                trace!("Found signal: {}", method.short_text());
                             }
                             SectionType::Slots => {
                                 trace!("Found slot: {}", method.short_text());
